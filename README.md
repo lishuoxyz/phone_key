@@ -56,7 +56,7 @@ git push -u origin main
 推送后 Actions 跑完，页面地址是：
 
 ```
-https://<你的用户名>.github.io/phone_key/
+https://lishuoxyz.github.io/phone_key/
 ```
 
 手机 Chrome 打开即可（HTTPS，满足 Web Bluetooth 的安全上下文要求），
