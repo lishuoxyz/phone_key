@@ -35,7 +35,8 @@ button.ghost{background:#1a2028}
 .key.start:active:not(:disabled){background:#4a2226}
 .key.start.running{background:radial-gradient(circle at 50% 35%,#1d4a2a,#12301b);border-color:#3ddc84;color:#b8f5cf}
 .hint{color:var(--sub);font-size:13px;margin-top:8px}
-.warn{display:none;border:1px solid #7a2a2f;background:#241417;color:#ffb4b8;border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}
+.warn{display:block;border:1px solid #7a2a2f;background:#241417;color:#ffb4b8;border-radius:12px;padding:12px;margin-bottom:12px;font-size:13px}
+.warn[hidden]{display:none}
 .warn code{background:#00000040;padding:1px 4px;border-radius:4px}
 #log{white-space:pre-wrap;word-break:break-all;font:12px/1.45 ui-monospace,Consolas,monospace;color:#aab6c6;max-height:150px;overflow:auto;margin:0}
 .small{font-size:12px;color:var(--sub);margin-top:8px}

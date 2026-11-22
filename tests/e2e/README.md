@@ -19,6 +19,12 @@
   `logs/devices/ALARM-SIM/…/boot-*.log`；
 - 手机侧截图/录屏留档，失败时记录：手机型号、Android 版本、浏览器/App 版本。
 
+## Android 模拟器（MuMu）的限制
+
+MuMu（Android 15）**没有蓝牙适配器**：`dumpsys bluetooth_manager` 里
+`address: null`，`svc bluetooth enable` 也保持 OFF。因此模拟器只能验证
+页面渲染、HTTPS/Web Bluetooth 提示、按键禁用态；**连接与控车必须真机**。
+
 ## 用例
 
 见 [`checklist.md`](checklist.md)，逐项打勾。任何一项失败都算该方案不通过，

@@ -11,7 +11,9 @@ export const CHAR_NOTIFY = "0000ffe1-0000-1000-8000-00805f9b34fb";
 export const CHAR_NOTIFY_ALT = "5833ff03-9b8b-5191-6142-22a4536ef123";
 
 export function webBluetoothAvailable() {
-  return typeof navigator !== "undefined" && !!navigator.bluetooth;
+  if (typeof navigator === "undefined" || !navigator.bluetooth) return false;
+  // Web Bluetooth is only exposed in a secure context; http://LAN-IP is not.
+  return typeof window !== "undefined" && window.isSecureContext !== false;
 }
 
 export class AlarmBle {
