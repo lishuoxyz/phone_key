@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "pin": 123789,
+  "key": {
+    "app_prefix_ascii": "Lenzeapp",
+    "dev_prefix_ascii": "Lenzedev",
+    "pin_bytes_be": true,
+    "tail_hex": "00000000"
+  },
+  "frame": {
+    "length": 16,
+    "checksum": "sum of bytes after index 1, low 8 bits; 0 when command length <= 2",
+    "padding": "zero"
+  },
+  "gatt": {
+    "services": {
+      "control": "0000ffe0-0000-1000-8000-00805f9b34fb",
+      "vendor": "5833ff01-9b8b-5191-6142-22a4536ef123"
+    },
+    "write_chars": ["0000ffe2-0000-1000-8000-00805f9b34fb", "5833ff02-9b8b-5191-6142-22a4536ef123"],
+    "notify_chars": ["0000ffe1-0000-1000-8000-00805f9b34fb", "5833ff03-9b8b-5191-6142-22a4536ef123"],
+    "note": "按 UUID 发现，禁止写死句柄；写特征优先 ffe2，使用带响应的写"
+  },
+  "commands": {
+    "lock":   {"press": "A50102", "release": "A50112"},
+    "unlock": {"press": "A50101", "release": "A50111"},
+    "horn":   {"press": "A50104", "release": "A50114"},
+    "mute":   {"press": "A50103", "release": "A50113"},
+    "start":  {"press": "A50106", "release": "A50116"},
+    "status": {"press": "A600",   "release": null}
+  },
+  "rules": {
+    "release_delay_ms": 150,
+    "status_query_delay_ms": 600,
+    "no_status_query_after_actions": ["start"],
+    "start_requires_two_presses": true,
+    "start_arm_window_ms": 5000,
+    "stop_is_unlock": true,
+    "mode_started_value": 2,
+    "mode_stopped_value": 1,
+    "lock_value_locked": 2,
+    "lock_value_unlocked": 1
+  },
+  "status_layout": {
+    "opcode": "A6",
+    "lock_index": 2,
+    "mode_index": 3,
+    "pke_index": 5,
+    "pass1_index": 8,
+    "pass2_index": 9,
+    "note": "pass2 在真机/模拟器上是 (值+1) 存储，读取端要减 1 再显示"
+  },
+  "event_layout": {
+    "opcode": "A5",
+    "cmd_index": 2,
+    "lock_index": 3
+  }
+}

@@ -1,0 +1,252 @@
+{
+  "meta": {
+    "pin": 123789,
+    "generated_by": "tests/reference/gen_vectors.py"
+  },
+  "vectors": [
+    {
+      "id": "encode.lock.press",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50102",
+      "expect": "7FD06F23B431E7EF63B5FADBC87AFA11"
+    },
+    {
+      "id": "encode.lock.release",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50112",
+      "expect": "2789843E9C1C34CF007795C9BD526388"
+    },
+    {
+      "id": "encode.unlock.press",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50101",
+      "expect": "1BE70FFBBB83F342AF5F26BFAEE1FCE7"
+    },
+    {
+      "id": "encode.unlock.release",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50111",
+      "expect": "FF5805048B08865574C5440109E268A9"
+    },
+    {
+      "id": "encode.horn.press",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50104",
+      "expect": "FE67B62C2FE7CFBE92573FB68E8E1099"
+    },
+    {
+      "id": "encode.horn.release",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50114",
+      "expect": "F61C83AF381668DFAE351550C6BFF7D8"
+    },
+    {
+      "id": "encode.mute.press",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50103",
+      "expect": "8EA7CF7E6239D727A9F1086C4D4C3738"
+    },
+    {
+      "id": "encode.mute.release",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50113",
+      "expect": "D2BAB07E4E05831206EBEC48F273D86B"
+    },
+    {
+      "id": "encode.start.press",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50106",
+      "expect": "3DC21FE3D2882F3D67B60A45E196969F"
+    },
+    {
+      "id": "encode.start.release",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A50116",
+      "expect": "A38D419301B9328C2E7F59952A7C2F8C"
+    },
+    {
+      "id": "encode.status.press",
+      "kind": "encode",
+      "pin": 123789,
+      "cmd": "A600",
+      "expect": "8717AEFDD5B58595B75758C24760A551"
+    },
+    {
+      "id": "encode.lock.pin0",
+      "kind": "encode",
+      "pin": 0,
+      "cmd": "A50102",
+      "expect": "6C6083AFDE6F118FED61F4EE33CD3529"
+    },
+    {
+      "id": "encode.start.pin0",
+      "kind": "encode",
+      "pin": 0,
+      "cmd": "A50106",
+      "expect": "E26DB1BDF28ED79BA0C6C44D22416247"
+    },
+    {
+      "id": "encode.lock.pin1",
+      "kind": "encode",
+      "pin": 1,
+      "cmd": "A50102",
+      "expect": "DEC814FF773588526F85D95A29B0CC8E"
+    },
+    {
+      "id": "encode.start.pin1",
+      "kind": "encode",
+      "pin": 1,
+      "cmd": "A50106",
+      "expect": "948945FF87205EC6BE8E40E058C7BD5B"
+    },
+    {
+      "id": "encode.lock.pin999999",
+      "kind": "encode",
+      "pin": 999999,
+      "cmd": "A50102",
+      "expect": "FC7C18FFDC5D240BD6517417032279A8"
+    },
+    {
+      "id": "encode.start.pin999999",
+      "kind": "encode",
+      "pin": 999999,
+      "cmd": "A50106",
+      "expect": "B107BCBA60DE053361B58279638D32D0"
+    },
+    {
+      "id": "decode.status.locked",
+      "kind": "decode",
+      "pin": 123789,
+      "cipher": "BC8466818ABBA60236382CC1DC11A40E",
+      "plain": "A60802010102010203051100",
+      "lock": 2,
+      "mode": 1,
+      "pke": 2,
+      "pass1": 3,
+      "pass2": 4,
+      "expect": {
+        "lock": 2,
+        "mode": 1,
+        "pke": 2,
+        "pass1": 3,
+        "pass2": 4
+      }
+    },
+    {
+      "id": "decode.status.unlocked",
+      "kind": "decode",
+      "pin": 123789,
+      "cipher": "34F3EAF1751D9E69ECA79CC5C224625C",
+      "plain": "A60801010102010203051000",
+      "lock": 1,
+      "mode": 1,
+      "pke": 2,
+      "pass1": 3,
+      "pass2": 4,
+      "expect": {
+        "lock": 1,
+        "mode": 1,
+        "pke": 2,
+        "pass1": 3,
+        "pass2": 4
+      }
+    },
+    {
+      "id": "decode.status.started",
+      "kind": "decode",
+      "pin": 123789,
+      "cipher": "BA6841F39203C4C75A0A7FA429DC46EB",
+      "plain": "A60801020102010203051100",
+      "lock": 1,
+      "mode": 2,
+      "pke": 2,
+      "pass1": 3,
+      "pass2": 4,
+      "expect": {
+        "lock": 1,
+        "mode": 2,
+        "pke": 2,
+        "pass1": 3,
+        "pass2": 4
+      }
+    },
+    {
+      "id": "decode.event.start",
+      "kind": "decode",
+      "pin": 123789,
+      "cipher": "67BC56C954933C8DFEFB49CE308F2521",
+      "plain": "A5010601B6C3FF1F01000000A5010606",
+      "cmd": 6,
+      "lock": 1,
+      "expect": {
+        "cmd": 6,
+        "lock": 1
+      }
+    },
+    {
+      "id": "decode.event.unlock",
+      "kind": "decode",
+      "pin": 123789,
+      "cipher": "D9CD3C6D1E9DDDD82A027AB8E9A8AB88",
+      "plain": "A5010101B6C3FF1FA501010100000000",
+      "cmd": 1,
+      "lock": 1,
+      "expect": {
+        "cmd": 1,
+        "lock": 1
+      }
+    },
+    {
+      "id": "decode.heartbeat",
+      "kind": "decode",
+      "pin": 123789,
+      "cipher": "3B5FC6DCC93E82B90FF6FBCB078CFEE5",
+      "plain": "A9014B4B4BB3FF1FA9014B4B4BB3FF1F",
+      "counter": 75,
+      "expect": {
+        "counter": 75
+      }
+    },
+    {
+      "id": "decode.wrongPin",
+      "kind": "decode",
+      "pin": 111111,
+      "cipher": "BC8466818ABBA60236382CC1DC11A40E",
+      "expect_kind_not": "status"
+    },
+    {
+      "id": "checksum.A600",
+      "kind": "checksum",
+      "cmd": "A600",
+      "expect": 0
+    },
+    {
+      "id": "checksum.A50106",
+      "kind": "checksum",
+      "cmd": "A50106",
+      "expect": 6
+    },
+    {
+      "id": "checksum.A5010202",
+      "kind": "checksum",
+      "cmd": "A5010202",
+      "expect": 4
+    },
+    {
+      "id": "checksum.A5015A5A05",
+      "kind": "checksum",
+      "cmd": "A5015A5A05",
+      "expect": 185
+    }
+  ]
+}

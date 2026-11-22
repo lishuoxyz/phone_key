@@ -1,0 +1,231 @@
+{
+  "meta": {
+    "description": "判定表（Decision Table）用例：条件 = 连接状态 / 动作 / 是否已启动；动作 = 应发送的写序列（明文命令 + 相对延时）与状态变化。三套手机实现（PWA/Android/hybrid）必须全部通过。",
+    "pin": 123789,
+    "notes": [
+      "writes[].cmd 是加密前的明文命令，由实现用 PIN 加密后写到 ffe2（带响应）",
+      "delayBeforeMs 是相对上一条写的延时，必须精确 >= 规则值（150/600）",
+      "start 动作后不允许跟状态查询（会清掉等待第二次按键的状态）",
+      "start 需要窗口内两次完整按键，客户端只负责发 06+16 一对；是否真正启动由设备状态 mode==2 决定"
+    ]
+  },
+  "cases": [
+    {
+      "id": "DT-01",
+      "title": "已连接 + 上锁：发 02 按下、12 松开、600ms 后 A6 查询",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "lock",
+      "expect": {
+        "writes": [
+          {"cmd": "A50102", "delayBeforeMs": 0},
+          {"cmd": "A50112", "delayBeforeMs": 150},
+          {"cmd": "A600", "delayBeforeMs": 600}
+        ],
+        "hint": ""
+      }
+    },
+    {
+      "id": "DT-02",
+      "title": "已连接 + 解锁：01/11 + 查询",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "unlock",
+      "expect": {
+        "writes": [
+          {"cmd": "A50101", "delayBeforeMs": 0},
+          {"cmd": "A50111", "delayBeforeMs": 150},
+          {"cmd": "A600", "delayBeforeMs": 600}
+        ]
+      }
+    },
+    {
+      "id": "DT-03",
+      "title": "已连接 + 响喇叭：04/14 + 查询",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "horn",
+      "expect": {
+        "writes": [
+          {"cmd": "A50104", "delayBeforeMs": 0},
+          {"cmd": "A50114", "delayBeforeMs": 150},
+          {"cmd": "A600", "delayBeforeMs": 600}
+        ]
+      }
+    },
+    {
+      "id": "DT-04",
+      "title": "已连接 + 静音：03/13 + 查询",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "mute",
+      "expect": {
+        "writes": [
+          {"cmd": "A50103", "delayBeforeMs": 0},
+          {"cmd": "A50113", "delayBeforeMs": 150},
+          {"cmd": "A600", "delayBeforeMs": 600}
+        ]
+      }
+    },
+    {
+      "id": "DT-05",
+      "title": "查询状态：只发 A6，没有按下/松开对",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "status",
+      "expect": {"writes": [{"cmd": "A600", "delayBeforeMs": 0}]}
+    },
+    {
+      "id": "DT-06",
+      "title": "一键启动第一次按键：发 06+16，不查询，提示再按一次",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "start",
+      "nowMs": 10000,
+      "expect": {
+        "writes": [
+          {"cmd": "A50106", "delayBeforeMs": 0},
+          {"cmd": "A50116", "delayBeforeMs": 150}
+        ],
+        "hint": "press again to start",
+        "armedAfter": true
+      }
+    },
+    {
+      "id": "DT-07",
+      "title": "一键启动第二次按键（1s 内）：发 06+16，提示启动中",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}, "armedAgoMs": 1000},
+      "action": "start",
+      "nowMs": 11000,
+      "expect": {
+        "writes": [
+          {"cmd": "A50106", "delayBeforeMs": 0},
+          {"cmd": "A50116", "delayBeforeMs": 150}
+        ],
+        "hint": "starting",
+        "armedAfter": false
+      }
+    },
+    {
+      "id": "DT-08",
+      "title": "一键启动第二次按键（超出 5s 窗口）：等同于第一次",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}, "armedAgoMs": 6000},
+      "action": "start",
+      "nowMs": 16000,
+      "expect": {
+        "writes": [
+          {"cmd": "A50106", "delayBeforeMs": 0},
+          {"cmd": "A50116", "delayBeforeMs": 150}
+        ],
+        "hint": "press again to start",
+        "armedAfter": true
+      }
+    },
+    {
+      "id": "DT-09",
+      "title": "窗口边界：正好 5000ms 仍算第二次按键",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}, "armedAgoMs": 5000},
+      "action": "start",
+      "nowMs": 15000,
+      "expect": {"hint": "starting", "armedAfter": false}
+    },
+    {
+      "id": "DT-10",
+      "title": "已启动状态下再按启动：仍发 06+16，提示已启动，不改变 arm 状态",
+      "kind": "command",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 2, "pke": 0, "pass1": 0, "pass2": 0}},
+      "action": "start",
+      "nowMs": 20000,
+      "expect": {"hint": "already running", "armedAfter": false}
+    },
+    {
+      "id": "DT-11",
+      "title": "未连接时任何动作：报错且不发写",
+      "kind": "command",
+      "given": {"connected": false},
+      "action": "lock",
+      "expect": {"error": true}
+    },
+    {
+      "id": "DT-12",
+      "title": "未知动作：报错",
+      "kind": "command",
+      "given": {"connected": true},
+      "action": "explode",
+      "expect": {"error": true}
+    },
+    {
+      "id": "DT-13",
+      "title": "状态通知（已上锁 / 未启动 / pass 3,4）解析",
+      "kind": "notify",
+      "given": {"connected": true},
+      "input": {"plain": "A60802010102010203051100"},
+      "expect": {"status": {"lock": 2, "mode": 1, "pke": 2, "pass1": 3, "pass2": 4}, "started": false}
+    },
+    {
+      "id": "DT-14",
+      "title": "状态通知（已启动 mode=2 / 未锁）解析",
+      "kind": "notify",
+      "given": {"connected": true},
+      "input": {"plain": "A60801020102010203051100"},
+      "expect": {"status": {"lock": 1, "mode": 2, "pke": 2, "pass1": 3, "pass2": 4}, "started": true}
+    },
+    {
+      "id": "DT-15",
+      "title": "按键事件通知更新锁状态",
+      "kind": "notify",
+      "given": {"connected": true, "status": {"lock": 2, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "input": {"plain": "A5010101B6C3FF1FA501010100000000"},
+      "expect": {"parsedKind": "event", "stateAfter": {"lock": 1, "mode": 1}}
+    },
+    {
+      "id": "DT-16",
+      "title": "错误 PIN 解密：不产生有效状态",
+      "kind": "notify",
+      "given": {"connected": true, "status": {"lock": 2, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "input": {"plain": "A60802010102010203051100", "wrongPin": 111111},
+      "expect": {"parsedKindNot": "status", "stateAfter": {"lock": 2, "mode": 1}}
+    },
+    {
+      "id": "DT-17",
+      "title": "长度不足的通知（8 字节）被忽略",
+      "kind": "notify",
+      "given": {"connected": true},
+      "input": {"rawHex": "0011223344556677"},
+      "expect": {"parsedNone": true}
+    },
+    {
+      "id": "DT-18",
+      "title": "启动状态下点解锁：发解锁帧；收到 mode=1 状态后变为未启动",
+      "kind": "sequence",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 2, "pke": 0, "pass1": 0, "pass2": 0}},
+      "steps": [
+        {"action": "unlock", "expect": {"writes": ["A50101", "A50111", "A600"], "started": true}},
+        {"notify": {"plain": "A60801010102010203051000"}, "expect": {"started": false, "lock": 1}}
+      ]
+    },
+    {
+      "id": "DT-19",
+      "title": "断开连接清除 arm 状态，重连后第一次按键必须重新计数",
+      "kind": "sequence",
+      "given": {"connected": true, "status": {"lock": 1, "mode": 1, "pke": 0, "pass1": 0, "pass2": 0}},
+      "steps": [
+        {"action": "start", "nowMs": 1000, "expect": {"armed": true}},
+        {"disconnect": true, "expect": {"armed": false, "connected": false}},
+        {"connect": true, "expect": {"armed": false, "connected": true}},
+        {"action": "start", "nowMs": 2000, "expect": {"hint": "press again to start", "armed": true}}
+      ]
+    },
+    {
+      "id": "DT-20",
+      "title": "pass2 字节按 (值+1) 存储：0x05 解码为 4",
+      "kind": "notify",
+      "given": {"connected": true},
+      "input": {"plain": "A60802010102010203050600"},
+      "expect": {"status": {"pass1": 3, "pass2": 4}}
+    }
+  ]
+}
