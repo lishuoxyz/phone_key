@@ -39,3 +39,25 @@ run_all.bat
 python tests\run_all.py --adapter "node tests\adapters\js\run.mjs"
 python tests\run_all.py --adapter "java -cp android\adapter\build\adapter.jar AdapterMain"
 ```
+
+## 部署到 GitHub Pages
+
+仓库已带 `.github/workflows/pages.yml`：推送到 `main` 后自动把 `pwa/` 发布为
+GitHub Pages 站点（Settings → Pages 的 Source 选 "GitHub Actions"）。
+
+一次性初始化（在 GitHub 上先建一个空仓库，比如 `phone_key`）：
+
+```bat
+cd F:\ESP\code\phone_key
+git remote add origin https://github.com/<你的用户名>/phone_key.git
+git push -u origin main
+```
+
+推送后 Actions 跑完，页面地址是：
+
+```
+https://<你的用户名>.github.io/phone_key/
+```
+
+手机 Chrome 打开即可（HTTPS，满足 Web Bluetooth 的安全上下文要求），
+可"添加到主屏幕"当 App 用。
