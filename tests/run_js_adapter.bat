@@ -20,5 +20,5 @@ if not defined PY (
   echo Python 3 not found.
   exit /b 2
 )
-%PY% "%~dp0run_all.py" --adapter "%NODE_EXE% %~dp0adapters\js\run.mjs"
+%PY% "%~dp0run_all.py" --node "%NODE_EXE%" --adapter "%NODE_EXE% %~dp0adapters\js\run.mjs"
 exit /b %ERRORLEVEL%

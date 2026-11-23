@@ -61,3 +61,19 @@ https://lishuoxyz.github.io/phone_key/
 
 手机 Chrome 打开即可（HTTPS，满足 Web Bluetooth 的安全上下文要求），
 可"添加到主屏幕"当 App 用。
+
+## 版本号
+
+- 页面右上角显示 `vX.Y.Z`，加载日志里也会打印当前版本；
+- 唯一来源：`pwa/version.json`（`version` + `updated`）；
+- **每次改动 `pwa/**` 都必须递增版本号**，提交信息以 `pwa vX.Y.Z: ...` 开头；
+- 递增用脚本：
+
+```bat
+python tools\bump_version.py           # patch: 0.1.1 -> 0.1.2
+python tools\bump_version.py --minor   # minor: 0.1.1 -> 0.2.0
+python tools\bump_version.py --major   # major: 0.1.1 -> 1.0.0
+```
+
+- CI 会检查：`.github/workflows/pages.yml` 里 "Check version bump" 这一步在
+  `pwa/**` 有改动但 `version.json` 没变时直接让部署失败。

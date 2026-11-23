@@ -12,6 +12,7 @@ const link = createLink(PIN_DEFAULT);
 
 const els = {
   status: $("status"),
+  version: $("version"),
   device: $("device"),
   lock: $("lock"),
   mode: $("mode"),
@@ -27,7 +28,7 @@ const ble = new AlarmBle({
   onNotify: (bytes) => {
     const parsed = link.onNotify(bytes);
     if (!parsed) {
-      log("← 无法解析的通知（" + bytesToHex(bytes) + "）");
+      log("← 无法解析的通知 len=" + bytes.length + " " + bytesToHex(bytes));
       return;
     }
     if (parsed.kind === "status") {
@@ -121,11 +122,18 @@ async function sendAction(action) {
 }
 
 els.connect.addEventListener("click", async () => {
+  if (ble.connected) {
+    log("已经连接；如需重新扫描，请先点「断开」");
+    return;
+  }
   try {
     const device = await ble.pickDevice();
     await ble.connect(device);
     link.connect();
     render();
+    if (ble.writeCharacteristicUuid && !ble.writeCharacteristicUuid.includes("ffe2")) {
+      log("警告：写特征不是 0xffe2，设备可能不响应控制命令");
+    }
     await sendAction("status");
   } catch (err) {
     log("连接失败: " + (err && err.message ? err.message : err));
@@ -143,10 +151,30 @@ document.querySelectorAll("[data-action]").forEach((btn) => {
 });
 
 /* Keep the state fresh while the page is visible; the device also sends a
- * status frame after every action, this is only a safety net. */
+ * status frame after every action, this is only a safety net. Writes are
+ * serialised by the BLE layer, and we never queue a second poll. */
+let statusInFlight = false;
 setInterval(() => {
-  if (document.visibilityState === "visible" && ble.connected) sendAction("status");
+  if (document.visibilityState !== "visible" || !ble.connected) return;
+  if (statusInFlight) return;
+  statusInFlight = true;
+  sendAction("status").finally(() => { statusInFlight = false; });
 }, 6000);
+
+async function loadVersion() {
+  try {
+    const res = await fetch("version.json?" + Date.now(), { cache: "no-store" });
+    const data = await res.json();
+    if (data && data.version) {
+      els.version.textContent = "v" + data.version;
+      return data.version;
+    }
+  } catch (err) {
+    // offline or served without version.json: keep the placeholder
+  }
+  els.version.textContent = "v?";
+  return "";
+}
 
 if (!webBluetoothAvailable()) {
   els.scanNote.hidden = false;
@@ -154,4 +182,6 @@ if (!webBluetoothAvailable()) {
 }
 
 render();
-log("页面已加载，等待连接");
+loadVersion().then((version) => {
+  log("页面已加载" + (version ? " v" + version : "") + "，等待连接");
+});

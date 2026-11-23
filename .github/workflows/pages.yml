@@ -25,11 +25,33 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check version bump
+        if: github.event_name == 'push'
+        run: |
+          set -e
+          changed=$(git diff --name-only HEAD^ HEAD -- pwa | grep -v '^pwa/version.json$' || true)
+          if [ -z "$changed" ]; then
+            echo "no PWA code change, version bump not required"
+            exit 0
+          fi
+          old=$(git show HEAD^:pwa/version.json 2>/dev/null | python3 -c 'import sys,json;print(json.load(sys.stdin)["version"])' || true)
+          new=$(python3 -c 'import json;print(json.load(open("pwa/version.json"))["version"])')
+          echo "pwa version: ${old:-none} -> ${new}"
+          if [ "$old" = "$new" ]; then
+            echo "::error::pwa/** changed but pwa/version.json was not bumped; run tools/bump_version.py"
+            exit 1
+          fi
+
       - uses: actions/configure-pages@v5
         with:
           enablement: true
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: pwa
+
       - id: deployment
         uses: actions/deploy-pages@v4

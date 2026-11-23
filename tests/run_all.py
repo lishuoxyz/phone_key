@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -170,10 +171,25 @@ def check_adapter_harness() -> list[str]:
     return errors
 
 
+def check_js_units(node: str) -> list[str]:
+    """Run the pure JS unit tests (GATT selection / write queue)."""
+    argv = [node, "--test", str(HERE / "unit")]
+    try:
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=120)
+    except FileNotFoundError:
+        return ["node not found: %s" % node]
+    if proc.returncode != 0:
+        tail = (proc.stdout or "")[-1500:]
+        return ["js unit tests failed:\n" + tail]
+    return []
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="phone_key test suite")
     parser.add_argument("--adapter", default=None,
                         help='command that runs an implementation, e.g. "node tests/adapters/js/run.mjs"')
+    parser.add_argument("--node", default=None,
+                        help="path to node.exe; when given, also run tests/unit (GATT helpers)")
     args = parser.parse_args(argv)
 
     failures: list[str] = []
@@ -198,6 +214,11 @@ def main(argv=None) -> int:
     step("adapter harness (self-test)")
     failures += check_adapter_harness()
     print("ok: reference adapter passes, mutant adapter is caught")
+
+    if args.node:
+        step("js unit tests")
+        failures += check_js_units(args.node)
+        print("ok: GATT selection / write queue")
 
     if args.adapter:
         step("adapter: %s" % args.adapter)

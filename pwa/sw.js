@@ -1,4 +1,4 @@
-const CACHE = "phone-key-v1";
+const CACHE = "phone-key-v2";
 const ASSETS = [
   "./",
   "./index.html",

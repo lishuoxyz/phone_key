@@ -18,6 +18,7 @@ header .sp{flex:1}
 .pill.on{background:#123524;color:var(--ok)}
 .pill.started{background:#3a2a12;color:var(--warn)}
 .pill.off{background:#221a1c;color:var(--err)}
+.pill.ver{background:#1d2530;color:var(--sub);font-size:11px;padding:4px 8px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:12px}
 .card h2{margin:0 0 10px;font-size:13px;color:var(--sub);font-weight:600;letter-spacing:.02em}
 .row{display:flex;gap:8px;flex-wrap:wrap}
@@ -46,10 +47,11 @@ button.ghost{background:#1a2028}
 <header>
   <h1>车钥匙</h1>
   <span class="pill off" id="status">未连接</span>
+  <span class="pill ver" id="version">v—</span>
   <span class="sp"></span>
 </header>
 
-<div class="warn" id="scanNote">
+<div class="warn" id="scanNote" hidden>
   这个浏览器不支持 <b>Web Bluetooth</b>。请用 <b>Android Chrome</b> 打开，
   并且页面必须是 <b>HTTPS</b>（<code>http://局域网IP</code> 下浏览器会禁用蓝牙 API）。
 </div>

@@ -3,12 +3,16 @@
 // Only the GATT plumbing lives here; protocol/state logic is in protocol.js.
 // Requires a secure context (https:// or localhost) and Chrome/Edge on Android.
 
-export const SERVICE_CONTROL = "0000ffe0-0000-1000-8000-00805f9b34fb";
-export const SERVICE_VENDOR = "5833ff01-9b8b-5191-6142-22a4536ef123";
-export const CHAR_WRITE = "0000ffe2-0000-1000-8000-00805f9b34fb";
-export const CHAR_WRITE_ALT = "5833ff02-9b8b-5191-6142-22a4536ef123";
-export const CHAR_NOTIFY = "0000ffe1-0000-1000-8000-00805f9b34fb";
-export const CHAR_NOTIFY_ALT = "5833ff03-9b8b-5191-6142-22a4536ef123";
+import {
+  SERVICE_CONTROL,
+  SERVICE_VENDOR,
+  normalizeUuid,
+  pickWriteChar,
+  pickNotifyChars,
+  createSerialQueue,
+} from "./gatt.js";
+
+export { SERVICE_CONTROL, SERVICE_VENDOR };
 
 export function webBluetoothAvailable() {
   if (typeof navigator === "undefined" || !navigator.bluetooth) return false;
@@ -27,125 +31,140 @@ export class AlarmBle {
     this.onLog = onLog || (() => {});
     this.deviceName = "";
     this.deviceId = "";
+    this.queue = createSerialQueue();
   }
 
   get connected() {
     return !!(this.device && this.device.gatt && this.device.gatt.connected);
   }
 
+  get writeCharacteristicUuid() {
+    return this.writeChar ? normalizeUuid(this.writeChar.uuid) : "";
+  }
+
   async pickDevice() {
     if (!webBluetoothAvailable()) {
       throw new Error("此浏览器不支持 Web Bluetooth（需要 Android Chrome 且页面为 HTTPS）");
     }
-    const device = await navigator.bluetooth.requestDevice({
+    return navigator.bluetooth.requestDevice({
       filters: [{ namePrefix: "bdb-PKE" }],
       optionalServices: [SERVICE_CONTROL, SERVICE_VENDOR],
     });
-    return device;
   }
 
   async connect(device) {
+    if (this.connected && this.device === device) {
+      return this;
+    }
+    if (this.connected) {
+      this.disconnect();
+    }
+
     this.device = device;
     this.deviceName = device.name || "(unknown)";
     this.deviceId = device.id || "";
-    device.addEventListener("gattserverdisconnected", () => {
-      this.server = null;
-      this.writeChar = null;
-      this.notifyChars = [];
-      this.onDisconnect();
-    });
+    device.addEventListener("gattserverdisconnected", () => this.handleDisconnected());
 
     this.onLog("连接 " + this.deviceName + " …");
     this.server = await device.gatt.connect();
 
-    // Write characteristic: prefer 0xffe2, fall back to 5833ff02.
-    this.writeChar = await this.findChar(this.server, [CHAR_WRITE, CHAR_WRITE_ALT], "write");
-    if (!this.writeChar) throw new Error("找不到可写特征（0xffe2 / 5833ff02）");
+    const chars = await this.collectCharacteristics();
+    this.writeChar = pickWriteChar(chars);
+    if (!this.writeChar) {
+      throw new Error("找不到可写特征（期望 0xffe2）");
+    }
 
-    // Notification characteristics: both, when present.
     this.notifyChars = [];
-    for (const uuid of [CHAR_NOTIFY, CHAR_NOTIFY_ALT]) {
+    for (const ch of pickNotifyChars(chars)) {
       try {
-        const ch = await this.findChar(this.server, [uuid], "notify");
-        if (ch) {
-          await ch.startNotifications();
-          ch.addEventListener("characteristicvaluechanged", (ev) => {
-            const view = ev.target.value;
-            const bytes = new Uint8Array(view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength));
-            this.onNotify(bytes);
-          });
-          this.notifyChars.push(ch);
-        }
+        await ch.startNotifications();
+        ch.addEventListener("characteristicvaluechanged", (ev) => {
+          const view = ev.target.value;
+          const bytes = new Uint8Array(
+            view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength)
+          );
+          this.onNotify(bytes);
+        });
+        this.notifyChars.push(ch);
       } catch (err) {
-        this.onLog("订阅 " + uuid.slice(4, 8) + " 失败: " + err.message);
+        this.onLog("订阅 " + shortUuid(ch.uuid) + " 失败: " + err.message);
       }
     }
-    if (!this.notifyChars.length) throw new Error("没有可用的通知特征");
-    this.onLog("已连接，写特征 " + shortUuid(this.writeChar.uuid));
+    if (!this.notifyChars.length) {
+      throw new Error("没有可用的通知特征（0xffe1 / 5833ff03）");
+    }
+
+    const notifyNames = this.notifyChars.map((ch) => shortUuid(ch.uuid)).join("+");
+    this.onLog(
+      "已连接，写特征 " + shortUuid(this.writeChar.uuid) + "，通知 " + notifyNames
+    );
     return this;
   }
 
-  async findChar(server, uuids, prop) {
-    for (const uuid of uuids) {
-      const service = await serviceOf(server, uuid);
-      if (!service) continue;
+  /** Read every characteristic of the two known services (fallback: all). */
+  async collectCharacteristics() {
+    const out = [];
+    const services = [];
+    for (const uuid of [SERVICE_CONTROL, SERVICE_VENDOR]) {
       try {
-        const ch = await service.getCharacteristic(uuid);
-        const p = ch.properties || {};
-        if (prop === "write" && (p.write || p.writeWithoutResponse)) return ch;
-        if (prop === "notify" && (p.notify || p.indicate)) return ch;
+        services.push(await this.server.getPrimaryService(uuid));
       } catch (err) {
-        // characteristic not in this service: try the next candidate
+        // service absent: ignore, the fallback below covers unusual layouts
       }
     }
-    // Fall back to walking all services (some firmwares report odd UUID bases).
-    try {
-      const services = await server.getPrimaryServices();
-      for (const service of services) {
-        let chars = [];
-        try { chars = await service.getCharacteristics(); } catch (err) { continue; }
-        for (const ch of chars) {
-          const u = String(ch.uuid).toLowerCase();
-          if (!uuids.some((want) => u === want.toLowerCase())) continue;
-          const p = ch.properties || {};
-          if (prop === "write" && (p.write || p.writeWithoutResponse)) return ch;
-          if (prop === "notify" && (p.notify || p.indicate)) return ch;
-        }
+    if (!services.length) {
+      try {
+        services.push(...(await this.server.getPrimaryServices()));
+      } catch (err) {
+        // nothing we can do
       }
-    } catch (err) {
-      // ignore
     }
-    return null;
+    for (const service of services) {
+      try {
+        out.push(...(await service.getCharacteristics()));
+      } catch (err) {
+        // ignore a service that refuses enumeration
+      }
+    }
+    return out;
   }
 
-  async write(bytes) {
-    if (!this.writeChar) throw new Error("未连接");
-    if (this.writeChar.properties && this.writeChar.properties.write) {
-      await this.writeChar.writeValueWithResponse(bytes);
-    } else {
-      await this.writeChar.writeValueWithoutResponse(bytes);
+  handleDisconnected() {
+    this.server = null;
+    this.writeChar = null;
+    this.notifyChars = [];
+    this.queue = createSerialQueue();
+    this.onDisconnect();
+  }
+
+  /**
+   * Serialised write: Web Bluetooth allows only one GATT procedure at a time,
+   * so a status query fired by the timer must not overlap a key press.
+   */
+  write(bytes) {
+    const char = this.writeChar;
+    if (!char) {
+      return Promise.reject(new Error("未连接"));
     }
+    return this.queue(async () => {
+      const p = char.properties || {};
+      if (p.write) {
+        await char.writeValueWithResponse(bytes);
+      } else {
+        await char.writeValueWithoutResponse(bytes);
+      }
+    });
   }
 
   disconnect() {
     if (this.device && this.device.gatt && this.device.gatt.connected) {
       this.device.gatt.disconnect();
     }
-    this.server = null;
-    this.writeChar = null;
-    this.notifyChars = [];
-  }
-}
-
-async function serviceOf(server, uuid) {
-  try {
-    return await server.getPrimaryService(uuid);
-  } catch (err) {
-    return null;
+    this.handleDisconnected();
   }
 }
 
 function shortUuid(uuid) {
-  const s = String(uuid);
+  const s = normalizeUuid(uuid);
   return s.length > 8 ? s.slice(4, 8) : s;
 }
